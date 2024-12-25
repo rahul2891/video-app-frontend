@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Peer from 'peerjs';
 import {v4 as UUIDv4} from 'uuid';  
 import { peerReducer } from '../Reducers/peerReducer';
-import { addPeerAction } from '../Actions/peerAction';
+import { addPeerAction, removePeerAction } from '../Actions/peerAction';
 
 const WS_Server = 'http://localhost:5500';
 
@@ -73,12 +73,22 @@ export const SocketProvider: React.FC<Props> = ({ children }) => {
             })
         });
 
-        socket.emit("ready")
+        socket.on('user-left', ({ peerId }: { peerId: string }) => {
+            dispatch(removePeerAction(peerId));
+        });
+
+        socket.emit("ready");
+
+        return () => {
+            socket.off('user-joined');
+            socket.off('user-left');
+            user.off('call');
+        };
 
     },[user, stream]);
 
     return (
-        <SocketContext.Provider value={{socket, user, stream, peers}}>
+        <SocketContext.Provider value={{socket, user, setStream, stream, peers, dispatch}}>
             {children}
         </SocketContext.Provider>
     );
